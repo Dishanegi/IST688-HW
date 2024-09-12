@@ -1,3 +1,7 @@
 streamlit
-openai
+openai=0.28
+bs4
+google-generativeai
+anthropic
+mistralai
 PyMuPDF

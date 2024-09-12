@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 import fitz 
 
 # Show title and description.
@@ -16,7 +16,7 @@ if not openai_api_key:
 else:
 
     # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+    client = openai(api_key=openai_api_key)
 
     # Let the user upload a file via `st.file_uploader`.
     uploaded_file = st.file_uploader(

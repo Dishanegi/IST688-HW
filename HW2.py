@@ -1,99 +1,186 @@
 import streamlit as st
-from openai import OpenAI
+import requests
+from bs4 import BeautifulSoup
+import openai
+from mistralai import Mistral
+from anthropic import Anthropic
 
-# Show title and description.
-st.title("HW-02-Disha Negi📄 Document question answering")
-st.write(
-    "Upload a document below and ask a question about it – GPT will answer! "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-)
+# Apply custom CSS to beautify the app
+st.markdown("""
+    <style>
+    /* Change the font color of the title */
+    .title {
+        color: #2E86C1;
+        font-family: 'Helvetica', sans-serif;
+        font-size: 48px;
+        font-weight: bold;
+    }
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
+    /* Style for subtitles */
+    .subtitle {
+        color: #117A65;
+        font-family: 'Arial', sans-serif;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
 
-# Fetch the OpenAI API key from Streamlit secrets.
-openai_api_key = st.secrets["api_key"]
+    /* Style for normal text */
+    .normal-text {
+        color: #1F618D;
+        font-family: 'Verdana', sans-serif;
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
 
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+    /* Background color for the main content */
+    .stApp {
+        background-color: #FBFCFC;
+    }
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+    /* Style the button */
+    div.stButton > button {
+        background-color: #117A65;
+        color: white;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 18px;
+    }
 
-    # Let the user upload a file via `st.file_uploader`.
-    uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .md)", type=("txt", "md")
-    )
+    /* Style for the sidebar */
+    .css-1d391kg {
+        background-color: #D4E6F1;
+    }
 
-    # Sidebar options for summarizing 
-    st.sidebar.title("Choose Summary Format")
-    summary_options = st.sidebar.radio(
-        "Select a format for summarizing the document:",
-        (
-            "Summarize the document in 100 words",
-            "Summarize the document in 2 connecting paragraphs",
-            "Summarize the document in 5 bullet points"
-        ),
-    )
+    /* Style input boxes */
+    input {
+        border: 2px solid #117A65;
+        border-radius: 5px;
+        padding: 5px;
+        font-size: 16px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # Checkbox for different model selection
-    use_advanced_model = st.sidebar.checkbox("Use Advanced Model")
-    
-    # Select the model based on checkbox status
-    model = "gpt-4o" if use_advanced_model else "gpt-4o-mini"
+# Function to read the content from a URL
+def read_url_content(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        soup = BeautifulSoup(response.content, 'html.parser')
+        return soup.get_text()
+    except requests.RequestException as e:
+        st.error(f"Error reading {url}: {e}")
+        return None
 
-    if uploaded_file:
-
-        # Process the uploaded file
-        document = uploaded_file.read().decode()
-
-        # Instruction based on user selection on the sidebar menu
-        instruction = f"Summarize the document in {summary_options.lower()}."
-
-        # Prepare the messages for the LLM
+# Function to call OpenAI API
+def call_openai(api_key, document, instruction):
+    try:
+        openai.api_key = api_key
         messages = [
             {
                 "role": "user",
-                "content": f"Here's a document: {document} \n\n---\n\n {instruction}",
+                "content": f"Here's a document: {document} \n\n---\n\n {instruction}"
             }
         ]
 
-        # Generate the summary using the OpenAI API.
-        stream = client.chat.completions.create(
-            model=model,
+        # Generate the summary using OpenAI GPT
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
             messages=messages,
-            stream=True,
+            max_tokens=500,
+            temperature=0.7
         )
 
-        # Stream the response to the app using `st.write_stream`.
-        st.write_stream(stream)
+        # Stream the response to the app
+        st.write(response['choices'][0]['message']['content'].strip())
 
-    # # Ask the user for a question via `st.text_area`.
-    # question = st.text_area(
-    #     "Now ask a question about the document!",
-    #     placeholder="Can you give me a short summary?",
-    #     disabled=not uploaded_file,
-    # )
+    except Exception as e:
+        st.error(f"Error with OpenAI: {e}")
 
-    # if uploaded_file and question:
+# Function to call Claude API
+def call_claude(api_key, document, instruction):
+    try:
+        anthropic_client = Anthropic(api_key=api_key)
+        formatted_prompt = f"Here's a document: {document} \n\n---\n\n {instruction}"
 
-    #     # Process the uploaded file and question.
-    #     document = uploaded_file.read().decode()
-    #     messages = [
-    #         {
-    #             "role": "user",
-    #             "content": f"Here's a document: {document} \n\n---\n\n {question}",
-    #         }
-    #     ]
+        response = anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=1024,
+            messages=[
+                {"role": "user", "content": formatted_prompt}
+            ],
+            temperature=0.5
+        )
 
-    #     # Generate an answer using the OpenAI API.
-    #     stream = client.chat.completions.create(
-    #         model="gpt-4o-mini",
-    #         messages=messages,
-    #         stream=True,
-    #     )
+        # Process the response
+        if hasattr(response, 'content') and isinstance(response.content, list):
+            st.write(response.content[0].text)
+        else:
+            return "Unexpected response format from Claude API."
+    except Exception as e:
+        st.error(f"Error with Claude: {e}")
 
-    #     # Stream the response to the app using `st.write_stream`.
-    #     st.write_stream(stream)
+# Function to call Mistral API
+def call_mistral(api_key, document, instruction):
+    try:
+        mistral_client = Mistral(api_key=api_key)
+        formatted_prompt = f"Here's a document: {document} \n\n---\n\n {instruction}"
+
+        response = mistral_client.chat.complete(
+            model="mistral-large-latest",
+            messages=[{"role": "user", "content": formatted_prompt}]
+        )
+        # Process the response
+        if response.choices and len(response.choices) > 0:
+            st.write(response.choices[0].message.content.strip())
+
+    except Exception as e:
+        st.error(f"Error with Mistral: {e}")
+
+# Title with custom styling
+st.markdown('<h1 class="title">HW-02: Disha Negi URL Summarization</h1>', unsafe_allow_html=True)
+st.markdown('<h3 class="subtitle">Enter a URL below, choose an LLM, and see how the content is summarized!</h3>', unsafe_allow_html=True)
+
+# URL input
+url = st.text_input("Enter a URL:")
+
+# Sidebar for selecting the LLM
+st.sidebar.title("LLM Selection")
+llm_option = st.sidebar.selectbox(
+    "Select the LLM to use:",
+    ("OpenAI", "Claude", "Mistral")
+)
+
+# Sidebar for summary options
+st.sidebar.title("Choose Summary Format")
+summary_options = st.sidebar.radio(
+    "Select a format for summarizing the document:",
+    (
+        "Summarize the document in 100 words",
+        "Summarize the document in 2 connecting paragraphs",
+        "Summarize the document in 5 bullet points"
+    ),
+)
+
+# Language dropdown
+language_options = st.selectbox(
+    "Select the output language:",
+    ("English", "French", "Spanish")
+)
+
+# Summarization button with styling
+if st.button("Summarize"):
+    if url:
+        document = read_url_content(url)
+        if document:
+            instruction = f"Summarize the document in {summary_options.lower()} in {language_options.lower()}."
+
+            if llm_option == "OpenAI":
+                call_openai(st.secrets["openai_api_key"], document, instruction)
+            elif llm_option == "Claude":
+                call_claude(st.secrets["claude_api_key"], document, instruction)
+            elif llm_option == "Mistral":
+                call_mistral(st.secrets["mistral_api_key"], document, instruction)
+    else:
+        st.error("Please enter a valid URL.")
