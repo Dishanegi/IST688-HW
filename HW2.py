@@ -5,63 +5,6 @@ import openai
 from mistralai import Mistral
 from anthropic import Anthropic
 
-# Apply custom CSS to beautify the app
-st.markdown("""
-    <style>
-    /* Change the font color of the title */
-    .title {
-        color: #2E86C1;
-        font-family: 'Helvetica', sans-serif;
-        font-size: 48px;
-        font-weight: bold;
-    }
-
-    /* Style for subtitles */
-    .subtitle {
-        color: #117A65;
-        font-family: 'Arial', sans-serif;
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-
-    /* Style for normal text */
-    .normal-text {
-        color: #1F618D;
-        font-family: 'Verdana', sans-serif;
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-
-    /* Background color for the main content */
-    .stApp {
-        background-color: #FBFCFC;
-    }
-
-    /* Style the button */
-    div.stButton > button {
-        background-color: #117A65;
-        color: white;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-size: 18px;
-    }
-
-    /* Style for the sidebar */
-    .css-1d391kg {
-        background-color: #D4E6F1;
-    }
-
-    /* Style input boxes */
-    input {
-        border: 2px solid #117A65;
-        border-radius: 5px;
-        padding: 5px;
-        font-size: 16px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 # Function to read the content from a URL
 def read_url_content(url):
     try:
@@ -184,3 +127,71 @@ if st.button("Summarize"):
                 call_mistral(st.secrets["mistral_api_key"], document, instruction)
     else:
         st.error("Please enter a valid URL.")
+
+# Apply custom CSS to beautify the app
+st.markdown("""
+    <style>
+    /* Change the font color of the title */
+    .title {
+        color: #2E86C1;
+        font-family: 'Helvetica', sans-serif;
+        font-size: 48px;
+        font-weight: bold;
+    }
+
+    /* Style for subtitles */
+    .subtitle {
+        color: #117A65;
+        font-family: 'Arial', sans-serif;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+
+    /* Style for normal text */
+    .normal-text {
+        color: #1F618D;
+        font-family: 'Verdana', sans-serif;
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+
+    /* Background color for the main content */
+    .stApp {
+        background-color: #FBFCFC;
+    }
+
+    /* Style the button */
+    div.stButton > button {
+        background-color: #117A65;
+        color: white;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-size: 18px;
+        border: none;
+        transition: none; /* Disable any transition effects */
+    }
+
+    /* Explicitly remove hover effect */
+    div.stButton > button:hover {
+        background-color: #117A65;
+        color: white;
+        border: none;
+        transform: none;
+        transition: none;
+    }
+
+    /* Style for the sidebar */
+    .css-1d391kg {
+        background-color: #D4E6F1;
+    }
+
+    /* Style input boxes */
+    input {
+        border: 2px solid #117A65;
+        border-radius: 5px;
+        padding: 5px;
+        font-size: 16px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
