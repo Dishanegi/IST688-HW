@@ -116,7 +116,7 @@ language_options = st.selectbox(
 use_advanced_model = st.sidebar.checkbox("Use Advanced Model")
 
 
-# Summarization button with styling
+# Summarization button
 if st.button("Summarize"):
     if url:
         document = read_url_content(url)
