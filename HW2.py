@@ -17,7 +17,7 @@ def read_url_content(url):
         return None
 
 # Function to call OpenAI API
-def call_openai(api_key, document, instruction):
+def call_openai(api_key, document, instruction,model):
     try:
         openai.api_key = api_key
         messages = [
@@ -29,7 +29,7 @@ def call_openai(api_key, document, instruction):
 
         # Generate the summary using OpenAI GPT
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model=model,
             messages=messages,
             max_tokens=500,
             temperature=0.7
@@ -42,13 +42,13 @@ def call_openai(api_key, document, instruction):
         st.error(f"Error with OpenAI: {e}")
 
 # Function to call Claude API
-def call_claude(api_key, document, instruction):
+def call_claude(api_key, document, instruction,model):
     try:
         anthropic_client = Anthropic(api_key=api_key)
         formatted_prompt = f"Here's a document: {document} \n\n---\n\n {instruction}"
 
         response = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20240620",
+            model=model,
             max_tokens=1024,
             messages=[
                 {"role": "user", "content": formatted_prompt}
@@ -65,13 +65,13 @@ def call_claude(api_key, document, instruction):
         st.error(f"Error with Claude: {e}")
 
 # Function to call Mistral API
-def call_mistral(api_key, document, instruction):
+def call_mistral(api_key, document, instruction,model):
     try:
         mistral_client = Mistral(api_key=api_key)
         formatted_prompt = f"Here's a document: {document} \n\n---\n\n {instruction}"
 
         response = mistral_client.chat.complete(
-            model="mistral-large-latest",
+            model=model,
             messages=[{"role": "user", "content": formatted_prompt}]
         )
         # Process the response
@@ -112,6 +112,10 @@ language_options = st.selectbox(
     ("English", "French", "Spanish")
 )
 
+# Checkbox for different model selection
+use_advanced_model = st.sidebar.checkbox("Use Advanced Model")
+
+
 # Summarization button with styling
 if st.button("Summarize"):
     if url:
@@ -120,11 +124,15 @@ if st.button("Summarize"):
             instruction = f"Summarize the document in {summary_options.lower()} in {language_options.lower()}."
 
             if llm_option == "OpenAI":
-                call_openai(st.secrets["openai_api_key"], document, instruction)
+            # Select the model based on checkbox status
+                model = "gpt-4o" if use_advanced_model else "gpt-4o-mini"
+                call_openai(st.secrets["openai_api_key"], document, instruction,model)
             elif llm_option == "Claude":
-                call_claude(st.secrets["claude_api_key"], document, instruction)
+                model = "claude-3-5-sonnet-20240620" if use_advanced_model else "claude-3-haiku-20240307"
+                call_claude(st.secrets["claude_api_key"], document, instruction,model)
             elif llm_option == "Mistral":
-                call_mistral(st.secrets["mistral_api_key"], document, instruction)
+                model = "open-mistral-7b" if use_advanced_model else "mistral-large-latest"
+                call_mistral(st.secrets["mistral_api_key"], document, instruction,model)
     else:
         st.error("Please enter a valid URL.")
 
