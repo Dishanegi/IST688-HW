@@ -21,9 +21,9 @@ st.sidebar.title("Chat Bot Options")
 behavior = st.sidebar.radio(
     "Conversation behavior:",
     (
-        "Keep last 5 questions",
-        "Summarize after 5 interactions",
-        "Limit by token size (5000 tokens)",
+        "Buffer of 5 questions",
+        "Conversation Summary",
+        "Buffer of 5000 tokens",
     ),
 )
 
@@ -114,13 +114,13 @@ if not st.session_state["messages"]:
 # Function to manage conversation memory
 def manage_memory(messages, behavior):
 
-    if behavior == "Keep last 5 questions":
+    if behavior == "Buffer of 5 questions":
         # Keep system messages and last 5 pairs
         system_messages = [msg for msg in messages if msg["role"] == "system"]
         conversation = [msg for msg in messages if msg["role"] != "system"]
         return system_messages + conversation[-10:]  # Last 5 pairs (user and assistant)
 
-    elif behavior == "Summarize after 5 interactions":
+    elif behavior == "Conversation Summary":
         system_messages = [msg for msg in messages if msg["role"] == "system"]
         conversation = [msg for msg in messages if msg["role"] != "system"]
 
@@ -141,7 +141,7 @@ def manage_memory(messages, behavior):
         else:
             return messages
         
-    elif behavior == "Limit by token size (5000 tokens)":
+    elif behavior == "Buffer of 5000 tokens":
         system_messages = [msg for msg in messages if msg["role"] == "system"]
         conversation = [msg for msg in messages if msg["role"] != "system"]
         token_count = sum([len(msg["content"]) for msg in conversation])  # Rough estimation
@@ -153,7 +153,7 @@ def manage_memory(messages, behavior):
     else:
         return messages
 
-# Function to generate summary (needed for 'Summarize after 5 interactions')
+# Function to generate summary (needed for 'Conversation Summary')
 def generate_summary(text, instruction, model_to_use):
     if model_to_use in ["gpt-3.5-turbo", "gpt-4"]:
         return summarize_with_openai(text, instruction, model_to_use)
@@ -208,21 +208,21 @@ if prompt := st.chat_input("Ask the chatbot a question or interact:"):
     # Function to get chatbot response
     def get_chatbot_response(messages, model_to_use):
         if model_to_use in ["gpt-3.5-turbo", "gpt-4"]:
-            return chatbot_response_openai(messages, model_to_use)
+            return openai_response(messages, model_to_use)
         elif model_to_use.startswith("claude"):
-            return chatbot_response_claude(messages, model_to_use)
+            return claude_response(messages, model_to_use)
         else:
             st.error("Model not supported.")
             return None
 
-    def chatbot_response_openai(messages, model):
+    def openai_response(messages, model):
         response = client.chat.completions.create(
             model=model, messages=messages
         )
         assistant_message = response.choices[0].message.content
         return assistant_message
 
-    def chatbot_response_claude(messages, model):
+    def claude_response(messages, model):
         client = anthropic.Client(api_key=claude_api_key)
         prompt = ""
         for message in messages:
