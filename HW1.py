@@ -1,6 +1,6 @@
 import streamlit as st
-import openai
-import fitz 
+from openai import OpenAI
+import fitz  # PyMuPDF for reading PDFs
 
 # Show title and description.
 st.title("Disha Negi📄 Document Question Answering")
@@ -11,19 +11,17 @@ st.write(
 
 # Ask user for their OpenAI API key via `st.text_input`.
 openai_api_key = st.text_input("OpenAI API Key", type="password")
+
 if not openai_api_key:
     st.info("Please add your OpenAI API key to continue.", icon="🗝️")
 else:
-
-    # Create an OpenAI client.
-    client = openai(api_key=openai_api_key)
+    # Create an OpenAI client
+    client = OpenAI(api_key=openai_api_key)
 
     # Let the user upload a file via `st.file_uploader`.
-    uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .pdf)", type=("txt", "pdf")
-    )
+    uploaded_file = st.file_uploader("Upload a document (.txt or .pdf)", type=("txt", "pdf"))
 
-    # Function to read PDF file using PyMuPDF 
+    # Function to read PDF file using PyMuPDF (fitz)
     def read_pdf(file):
         try:
             # Using PyMuPDF (fitz)
@@ -45,7 +43,7 @@ else:
             document = uploaded_file.read().decode()
         elif file_extension == 'pdf':
             document = read_pdf(uploaded_file)
-        
+
         # Ask the user for a question via `st.text_area`.
         question = st.text_area(
             "Now ask a question about the document!",
@@ -62,14 +60,15 @@ else:
             ]
 
             # Generate an answer using the OpenAI API.
-            stream = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                stream=True,
+            response = client.chat.completions.create(
+                model="gpt-4",  # Use a valid model like "gpt-4"
+                messages=messages
             )
 
-            # Stream the response to the app using `st.write`.
-            st.write_stream(stream)
+            # Extract and display the answer
+            answer = response.choices[0].message.content
+            st.write("Answer:")
+            st.write(answer)
 
     # If the file is removed from the UI, clear the document data.
     if not uploaded_file:

@@ -4,4 +4,6 @@ bs4
 google-generativeai
 anthropic
 mistralai
+tiktoken
 PyMuPDF
+langchain_ollama

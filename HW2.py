@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import openai
+from openai import OpenAI
 from mistralai import Mistral
 from anthropic import Anthropic
 
@@ -19,7 +19,8 @@ def read_url_content(url):
 # Function to call OpenAI API
 def call_openai(api_key, document, instruction,model):
     try:
-        openai.api_key = api_key
+        # Create an OpenAI client
+        client = OpenAI(api_key=api_key)
         messages = [
             {
                 "role": "user",
@@ -28,7 +29,7 @@ def call_openai(api_key, document, instruction,model):
         ]
 
         # Generate the summary using OpenAI GPT
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=500,
@@ -36,7 +37,7 @@ def call_openai(api_key, document, instruction,model):
         )
 
         # Stream the response to the app
-        st.write(response['choices'][0]['message']['content'].strip())
+        st.write(response.choices[0].message.content.strip())
 
     except Exception as e:
         st.error(f"Error with OpenAI: {e}")
